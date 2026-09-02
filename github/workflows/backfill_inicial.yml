@@ -1,0 +1,38 @@
+name: Backfill inicial (manual, una sola vez)
+
+on:
+  workflow_dispatch:  # se dispara a mano desde la pestaña "Actions" de GitHub, nunca automático
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300  # 5hs de margen, el backfill real ronda 1.5-3hs
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Construir universo de tickers
+        run: python pipeline/universe.py
+
+      - name: Backfill histórico completo (esto tarda horas)
+        run: python pipeline/backfill.py
+
+      - name: Calcular métricas iniciales
+        run: python pipeline/metrics.py
+
+      - name: Commitear datos al repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/processed/
+          git diff --staged --quiet || git commit -m "Backfill inicial de datos"
+          git push
