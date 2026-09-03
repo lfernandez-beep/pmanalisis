@@ -14,6 +14,7 @@ import yfinance as yf
 
 from config import (
     N_ACCIONES_LIQUIDAS,
+    N_ETFS_LIQUIDOS,
     N_MESES_LOOKBACK_LIQUIDEZ,
     PATRONES_ETF_EXCLUIR,
     UNIVERSO_BONOS_ETF,
@@ -127,11 +128,8 @@ def construir_universo() -> pd.DataFrame:
     logger.info(f"Calculando liquidez para {len(etfs)} ETFs candidatos (sin apalancados)...")
     dv_etfs = calcular_dollar_volume_promedio(etfs["symbol"].tolist())
     etfs["dollar_volume_promedio"] = etfs["symbol"].map(dv_etfs).fillna(0.0)
-    # Sin límite fijo arbitrario: nos quedamos con los que tienen liquidez real (> 0),
-    # que naturalmente convergen al rango de ETFs líquidos del mercado.
-    etfs_liquidos = etfs[etfs["dollar_volume_promedio"] > 0].sort_values(
-        "dollar_volume_promedio", ascending=False
-    )
+    etfs_liquidos = etfs.nlargest(N_ETFS_LIQUIDOS, "dollar_volume_promedio")
+    etfs_liquidos = etfs_liquidos[etfs_liquidos["dollar_volume_promedio"] > 0]
 
     filas = []
     for _, row in top_acciones.iterrows():
