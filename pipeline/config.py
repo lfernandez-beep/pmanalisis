@@ -17,6 +17,7 @@ METRICS_JSON = PROCESSED_DIR / "metricas.json"
 
 # --- Universo ---
 N_ACCIONES_LIQUIDAS = 1500          # top N acciones por dollar-volume (dentro del rango 1000-2000 acordado)
+N_ETFS_LIQUIDOS = 400                # top N ETFs por dollar-volume (rango 300-500 acordado, sin apalancados)
 N_MESES_LOOKBACK_LIQUIDEZ = 6        # ventana para calcular dollar-volume promedio y rankear
 PATRONES_ETF_EXCLUIR = [             # apalancados / inversos, se excluyen por nombre
     "2X", "3X", "-1X", "ULTRA", "INVERSE", "BEAR", "BULL",
