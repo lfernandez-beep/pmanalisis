@@ -1,15 +1,15 @@
 name: Backfill inicial (manual, una sola vez)
 
 on:
-  workflow_dispatch:  # se dispara a mano desde la pestaña "Actions" de GitHub, nunca automático
-  
+  workflow_dispatch:  # se dispara a mano desde la pestaña "Actions" de GitHub
+
 permissions:
-  contents: write
-  
+  contents: write  # necesario para que el job pueda hacer git push de vuelta al repo
+
 jobs:
   backfill:
     runs-on: ubuntu-latest
-    timeout-minutes: 300  # 5hs de margen, el backfill real ronda 1.5-3hs
+    timeout-minutes: 60  # ya no hace falta el margen de 5hs: no se vuelve a descargar todo
 
     steps:
       - name: Checkout repo
@@ -23,13 +23,10 @@ jobs:
       - name: Instalar dependencias
         run: pip install -r requirements.txt
 
-      - name: Construir universo de tickers
-        run: python pipeline/universe.py
+      - name: Filtrar universo por liquidez (usa datos ya descargados, sin red)
+        run: python pipeline/refilter_universe.py
 
-      - name: Backfill histórico completo (esto tarda horas)
-        run: python pipeline/backfill.py
-
-      - name: Calcular métricas iniciales
+      - name: Recalcular métricas sobre el universo filtrado
         run: python pipeline/metrics.py
 
       - name: Commitear datos al repo
@@ -37,5 +34,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/processed/
-          git diff --staged --quiet || git commit -m "Backfill inicial de datos"
+          git diff --staged --quiet || git commit -m "Universo filtrado por liquidez + métricas recalculadas"
           git push
