@@ -7,6 +7,9 @@ on:
     - cron: "0 9 * * 6"
   workflow_dispatch:  # también se puede disparar a mano cuando quieras
 
+permissions:
+  contents: write  # necesario para que el job pueda hacer git push de vuelta al repo
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -30,10 +33,21 @@ jobs:
       - name: Recalcular métricas
         run: python pipeline/metrics.py
 
+      - name: Copiar metricas.json a la carpeta pública del dashboard
+        run: |
+          mkdir -p dashboard/data
+          cp data/processed/metricas.json dashboard/data/metricas.json
+
+      - name: Copiar datos que necesita la Netlify Function
+        run: |
+          mkdir -p netlify/functions/data
+          cp data/processed/precios_ajustados.parquet netlify/functions/data/
+          cp data/processed/metricas.json netlify/functions/data/
+
       - name: Commitear datos actualizados
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/processed/
+          git add data/processed/ dashboard/data/ netlify/functions/data/
           git diff --staged --quiet || git commit -m "Update semanal automático $(date +%Y-%m-%d)"
           git push
