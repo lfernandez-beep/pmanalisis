@@ -2,7 +2,10 @@ name: Backfill inicial (manual, una sola vez)
 
 on:
   workflow_dispatch:  # se dispara a mano desde la pestaña "Actions" de GitHub, nunca automático
-
+  
+permissions:
+  contents: write
+  
 jobs:
   backfill:
     runs-on: ubuntu-latest
