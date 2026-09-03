@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio PM Dashboard</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --panel: #131722;
+    --border: #262b38;
+    --text: #e6e8ee;
+    --text-dim: #8b93a7;
+    --accent: #4f8cff;
+    --green: #22c55e;
+    --red: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 24px;
+  }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  .subtitle { color: var(--text-dim); font-size: 13px; margin-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .panel h2 { font-size: 15px; margin: 0 0 14px 0; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+  .posiciones-tabla { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  .posiciones-tabla th, .posiciones-tabla td { text-align: left; padding: 6px 4px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .posiciones-tabla input {
+    background: #1a1f2e; border: 1px solid var(--border); color: var(--text);
+    border-radius: 5px; padding: 5px 8px; font-size: 13px; width: 100%;
+  }
+  .posiciones-tabla input.ticker { text-transform: uppercase; }
+  button {
+    background: var(--accent); color: white; border: none; border-radius: 6px;
+    padding: 9px 16px; font-size: 13px; cursor: pointer; font-weight: 500;
+  }
+  button.secundario { background: #262b38; }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .fila-botones { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+  .metric-card { background: #1a1f2e; border-radius: 8px; padding: 12px; }
+  .metric-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; }
+  .metric-value { font-size: 20px; font-weight: 600; margin-top: 4px; }
+  .metric-value.positivo { color: var(--green); }
+  .metric-value.negativo { color: var(--red); }
+  .pesos-lista { margin-top: 12px; font-size: 13px; }
+  .peso-fila { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); }
+  .barra-peso { height: 4px; background: var(--accent); border-radius: 2px; margin-top: 3px; }
+  #status { font-size: 13px; color: var(--text-dim); margin-top: 10px; min-height: 18px; }
+  #status.error { color: var(--red); }
+  .btn-quitar { background: none; border: none; color: var(--red); cursor: pointer; font-size: 16px; padding: 0 6px; }
+</style>
+</head>
+<body>
+
+<h1>Portfolio PM Dashboard</h1>
+<p class="subtitle" id="subtitle">Cargando universo...</p>
+
+<div class="grid">
+
+  <div class="panel">
+    <h2>Armar cartera</h2>
+    <table class="posiciones-tabla" id="tabla-posiciones">
+      <thead>
+        <tr><th>Ticker</th><th>Peso %</th><th></th></tr>
+      </thead>
+      <tbody id="tbody-posiciones"></tbody>
+    </table>
+    <div class="fila-botones">
+      <button class="secundario" onclick="agregarFila()">+ Agregar posición</button>
+    </div>
+    <div class="fila-botones" style="margin-top:16px;">
+      <button onclick="analizarCartera()">Analizar cartera (con pesos)</button>
+      <button class="secundario" onclick="completarConHRP()">Completar/Optimizar (HRP)</button>
+      <button class="secundario" onclick="completarConKelly()">Completar/Optimizar (Kelly)</button>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Resultado</h2>
+    <div id="resultado-vacio" style="color: var(--text-dim); font-size: 13px;">
+      Armá una cartera a la izquierda y analizala.
+    </div>
+    <div id="resultado-contenido" style="display:none;">
+      <div class="metric-grid" id="metric-grid"></div>
+      <div class="pesos-lista" id="pesos-lista"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// CONFIG -- ajustar esta URL según dónde termine desplegada la función
+// ============================================================
+const NETLIFY_FUNCTION_URL = "/.netlify/functions/analyze";
+const METRICAS_JSON_URL = "data/metricas.json";
+
+let universoMetricas = null;
+
+async function cargarUniverso() {
+  try {
+    const resp = await fetch(METRICAS_JSON_URL);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    universoMetricas = await resp.json();
+    document.getElementById("subtitle").textContent =
+      `Universo: ${universoMetricas.universo_total} activos · ` +
+      `Actualizado: ${universoMetricas.fecha_actualizacion} · ` +
+      `Risk-free: ${(universoMetricas.risk_free_rate * 100).toFixed(2)}%`;
+  } catch (e) {
+    document.getElementById("subtitle").textContent =
+      "No se pudo cargar metricas.json -- verificar que el archivo esté publicado en data/metricas.json";
+    console.error(e);
+  }
+}
+
+function agregarFila(ticker = "", peso = "") {
+  const tbody = document.getElementById("tbody-posiciones");
+  const fila = document.createElement("tr");
+  fila.innerHTML = `
+    <td><input type="text" class="ticker" placeholder="AAPL" value="${ticker}"></td>
+    <td><input type="number" class="peso" placeholder="ej. 25" step="0.1" value="${peso}"></td>
+    <td><button class="btn-quitar" onclick="this.closest('tr').remove()">×</button></td>
+  `;
+  tbody.appendChild(fila);
+}
+
+function leerPosicionesDeLaTabla() {
+  const filas = document.querySelectorAll("#tbody-posiciones tr");
+  const posiciones = [];
+  filas.forEach(fila => {
+    const ticker = fila.querySelector(".ticker").value.trim().toUpperCase();
+    const pesoRaw = fila.querySelector(".peso").value.trim();
+    if (!ticker) return;
+    posiciones.push({
+      ticker: ticker,
+      peso: pesoRaw === "" ? null : parseFloat(pesoRaw) / 100,
+    });
+  });
+  return posiciones;
+}
+
+function setStatus(mensaje, esError = false) {
+  const el = document.getElementById("status");
+  el.textContent = mensaje;
+  el.className = esError ? "error" : "";
+}
+
+async function llamarAnalyze(metodoCompletar) {
+  const posiciones = leerPosicionesDeLaTabla();
+  if (posiciones.length === 0) {
+    setStatus("Agregá al menos un ticker.", true);
+    return;
+  }
+
+  setStatus("Calculando...");
+  try {
+    const resp = await fetch(NETLIFY_FUNCTION_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ posiciones, metodo_completar: metodoCompletar }),
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      setStatus(data.error || "Error desconocido", true);
+      return;
+    }
+
+    setStatus("");
+    mostrarResultado(data);
+  } catch (e) {
+    setStatus("Error de red al llamar la función -- ¿está desplegada la Netlify Function?", true);
+    console.error(e);
+  }
+}
+
+function analizarCartera() {
+  const posiciones = leerPosicionesDeLaTabla();
+  if (posiciones.some(p => p.peso === null)) {
+    setStatus("Hay posiciones sin peso -- usá 'Completar/Optimizar' en vez de 'Analizar'.", true);
+    return;
+  }
+  llamarAnalyze(null);
+}
+
+function completarConHRP() { llamarAnalyze("hrp"); }
+function completarConKelly() { llamarAnalyze("kelly"); }
+
+function formatoPct(x) { return (x * 100).toFixed(2) + "%"; }
+
+function mostrarResultado(data) {
+  document.getElementById("resultado-vacio").style.display = "none";
+  document.getElementById("resultado-contenido").style.display = "block";
+
+  const m = data.metricas_portfolio;
+  const metricas = [
+    { label: "Retorno anualizado", value: formatoPct(m.retorno_anualizado), positivo: m.retorno_anualizado > 0 },
+    { label: "Volatilidad anualizada", value: formatoPct(m.volatilidad_anualizada) },
+    { label: "Sharpe", value: m.sharpe !== null ? m.sharpe.toFixed(2) : "N/A", positivo: m.sharpe > 0 },
+    { label: "Sortino", value: m.sortino !== null ? m.sortino.toFixed(2) : "N/A", positivo: m.sortino > 0 },
+    { label: "Max Drawdown", value: formatoPct(m.max_drawdown), negativo: true },
+    { label: "VaR 95%", value: formatoPct(m.var_95), negativo: true },
+    { label: "CVaR 95%", value: formatoPct(m.cvar_95), negativo: true },
+  ];
+  if (m.beta !== undefined) metricas.push({ label: "Beta vs SPY", value: m.beta.toFixed(2) });
+
+  const grid = document.getElementById("metric-grid");
+  grid.innerHTML = metricas.map(x => `
+    <div class="metric-card">
+      <div class="metric-label">${x.label}</div>
+      <div class="metric-value ${x.positivo ? 'positivo' : (x.negativo ? 'negativo' : '')}">${x.value}</div>
+    </div>
+  `).join("");
+
+  const pesosOrdenados = Object.entries(data.pesos).sort((a, b) => b[1] - a[1]);
+  const maxPeso = Math.max(...pesosOrdenados.map(p => p[1]));
+
+  const pesosDiv = document.getElementById("pesos-lista");
+  pesosDiv.innerHTML = `<div style="color:var(--text-dim); font-size:12px; margin-bottom:6px;">
+    Método: ${data.metodo}</div>` +
+    pesosOrdenados.map(([ticker, peso]) => `
+      <div class="peso-fila">
+        <span>${ticker}</span>
+        <span>${formatoPct(peso)}</span>
+      </div>
+      <div class="barra-peso" style="width:${(peso / maxPeso * 100).toFixed(0)}%"></div>
+    `).join("");
+}
+
+// Init
+cargarUniverso();
+agregarFila("AAPL", "");
+agregarFila("MSFT", "");
+agregarFila("SPY", "");
+</script>
+
+</body>
+</html>
