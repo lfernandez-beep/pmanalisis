@@ -67,28 +67,51 @@ def es_etf_apalancado_o_inverso(nombre_seguridad: str) -> bool:
     return any(patron in nombre_upper for patron in PATRONES_ETF_EXCLUIR)
 
 
-def calcular_dollar_volume_promedio(tickers: list[str], lote_size: int = 100) -> dict[str, float]:
+def calcular_dollar_volume_promedio(tickers: list[str], lote_size: int = 50) -> dict[str, float]:
     """
     Descarga N meses de histórico liviano (solo para rankear liquidez, no es el
     backfill completo) y calcula dollar-volume promedio = precio_cierre * volumen.
 
     Retorna dict ticker -> dollar_volume_promedio. Tickers que fallan quedan
     en 0.0 (se descartan naturalmente al rankear) en vez de romper la corrida.
+
+    Usa reintento + backoff exponencial por lote (igual que backfill.py) porque
+    Yahoo Finance bloquea temporalmente (HTTP 401 "Invalid Crumb") cuando detecta
+    volumen alto de requests en poco tiempo desde IPs de datacenter (GitHub Actions,
+    Colab). Sin esto, un bloqueo temprano tira 0.0 para TODOS los tickers restantes.
     """
     resultados: dict[str, float] = {}
     periodo = f"{N_MESES_LOOKBACK_LIQUIDEZ}mo"
+    max_reintentos = 4
+    backoff_base_segundos = 5
 
     for i in range(0, len(tickers), lote_size):
         lote = tickers[i:i + lote_size]
-        try:
-            datos = yf.download(
-                lote, period=periodo, group_by="ticker",
-                auto_adjust=True, progress=False, threads=True,
-            )
-        except Exception as e:
-            logger.warning(f"Lote de liquidez falló ({lote[0]}...{lote[-1]}): {e}")
+        datos = None
+
+        for intento in range(max_reintentos):
+            try:
+                datos = yf.download(
+                    lote, period=periodo, group_by="ticker",
+                    auto_adjust=True, progress=False, threads=True,
+                )
+                if datos is not None and not datos.empty:
+                    break
+            except Exception as e:
+                espera = backoff_base_segundos * (2 ** intento)
+                logger.warning(
+                    f"Intento {intento + 1}/{max_reintentos} falló para lote de liquidez "
+                    f"({lote[0]}...{lote[-1]}): {e}. Reintentando en {espera}s"
+                )
+                time.sleep(espera)
+                datos = None
+
+        if datos is None or datos.empty:
+            logger.warning(f"Lote de liquidez definitivamente falló tras {max_reintentos} intentos: "
+                           f"{lote[0]}...{lote[-1]}. Se asigna 0.0, no rompe la corrida.")
             for t in lote:
                 resultados[t] = 0.0
+            time.sleep(backoff_base_segundos)  # pausa extra tras un fallo, por las dudas
             continue
 
         for t in lote:
@@ -104,7 +127,7 @@ def calcular_dollar_volume_promedio(tickers: list[str], lote_size: int = 100) ->
             except (KeyError, Exception):
                 resultados[t] = 0.0
 
-        time.sleep(1)  # cortesía entre lotes, evita rate limiting
+        time.sleep(2)  # cortesía entre lotes, evita rate limiting
 
     return resultados
 
