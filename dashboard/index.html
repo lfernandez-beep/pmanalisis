@@ -104,9 +104,11 @@
 
 <script>
 // ============================================================
-// CONFIG -- ajustar esta URL según dónde termine desplegada la función
+// CONFIG -- la función de análisis ahora vive en Vercel (Netlify dejó de
+// soportar Python en sus Functions). Reemplazar por la URL real que Vercel
+// asigna al deployar, ej: "https://pmanalisis-api.vercel.app/api/analyze"
 // ============================================================
-const NETLIFY_FUNCTION_URL = "/.netlify/functions/analyze";
+const ANALYZE_API_URL = "https://REEMPLAZAR-CON-TU-DOMINIO-VERCEL.vercel.app/api/analyze";
 const METRICAS_JSON_URL = "data/metricas.json";
 
 let universoMetricas = null;
@@ -168,7 +170,7 @@ async function llamarAnalyze(metodoCompletar) {
 
   setStatus("Calculando...");
   try {
-    const resp = await fetch(NETLIFY_FUNCTION_URL, {
+    const resp = await fetch(ANALYZE_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ posiciones, metodo_completar: metodoCompletar }),
@@ -183,7 +185,7 @@ async function llamarAnalyze(metodoCompletar) {
     setStatus("");
     mostrarResultado(data);
   } catch (e) {
-    setStatus("Error de red al llamar la función -- ¿está desplegada la Netlify Function?", true);
+    setStatus("Error de red al llamar la función -- ¿está desplegada la función en Vercel y actualizada la URL en ANALYZE_API_URL?", true);
     console.error(e);
   }
 }
