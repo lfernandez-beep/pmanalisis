@@ -1,8 +1,2 @@
 [build]
   publish = "dashboard"
-  functions = "netlify/functions"
-
-[[headers]]
-  for = "/.netlify/functions/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"

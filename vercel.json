@@ -1,0 +1,8 @@
+{
+  "functions": {
+    "api/analyze.py": {
+      "maxDuration": 30,
+      "excludeFiles": "{dashboard/**,data/**,pipeline/**,tests/**,netlify/**}"
+    }
+  }
+}
