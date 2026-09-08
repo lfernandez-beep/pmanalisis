@@ -34,16 +34,16 @@ jobs:
           mkdir -p dashboard/data
           cp data/processed/metricas.json dashboard/data/metricas.json
 
-      - name: Copiar datos que necesita la Netlify Function
+      - name: Copiar datos que necesita la función de análisis (api/analyze.py, en Vercel)
         run: |
-          mkdir -p netlify/functions/data
-          cp data/processed/precios_ajustados.parquet netlify/functions/data/
-          cp data/processed/metricas.json netlify/functions/data/
+          mkdir -p api/data
+          cp data/processed/precios_ajustados.parquet api/data/
+          cp data/processed/metricas.json api/data/
 
       - name: Commitear datos al repo
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/processed/ dashboard/data/ netlify/functions/data/
+          git add data/processed/ dashboard/data/ api/data/
           git diff --staged --quiet || git commit -m "Universo filtrado por liquidez + métricas recalculadas"
           git push
