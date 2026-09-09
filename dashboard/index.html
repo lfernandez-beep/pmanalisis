@@ -3,251 +3,589 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portfolio PM Dashboard</title>
+<title>Portfolio — Análisis cuantitativo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0b0e14;
-    --panel: #131722;
-    --border: #262b38;
-    --text: #e6e8ee;
-    --text-dim: #8b93a7;
-    --accent: #4f8cff;
-    --green: #22c55e;
-    --red: #ef4444;
+    --ink: #0c0f13;
+    --panel: #12161c;
+    --panel-raised: #171c23;
+    --rule: #2a3038;
+    --rule-soft: #1c212a;
+    --paper: #eae6da;
+    --paper-dim: #9096a1;
+    --gold: #c6a15b;
+    --gold-dim: #8a744a;
+    --up: #5c9a7c;
+    --down: #b5584a;
+    --serif: 'Newsreader', Georgia, serif;
+    --mono: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
+    --sans: 'IBM Plex Sans', -apple-system, sans-serif;
   }
   * { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; }
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--sans);
     margin: 0;
-    padding: 24px;
+    padding: 0 28px 60px;
   }
-  h1 { font-size: 22px; margin-bottom: 4px; }
-  .subtitle { color: var(--text-dim); font-size: 13px; margin-bottom: 24px; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
-  .panel {
+
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 26px 0 18px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 22px;
+  }
+  .wordmark {
+    font-family: var(--serif);
+    font-size: 25px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  .wordmark em { font-style: italic; color: var(--gold); }
+  #subtitle {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--paper-dim);
+    display: flex;
+    gap: 14px;
+  }
+  #subtitle span:not(:last-child) { border-right: 1px solid var(--rule); padding-right: 14px; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 1.55fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+
+  .block { margin-bottom: 22px; }
+  .block-title {
+    font-family: var(--serif);
+    font-size: 15px;
+    font-style: italic;
+    color: var(--paper-dim);
+    margin: 0 0 10px;
+  }
+
+  .toolbar { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  input[type="text"], select {
+    background: var(--panel-raised);
+    border: 1px solid var(--rule);
+    color: var(--paper);
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 8px 10px;
+    border-radius: 3px;
+  }
+  #buscador { flex: 1; min-width: 160px; }
+  .universo-wrap {
     background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 18px;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    max-height: 520px;
+    overflow-y: auto;
   }
-  .panel h2 { font-size: 15px; margin: 0 0 14px 0; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
-  .posiciones-tabla { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
-  .posiciones-tabla th, .posiciones-tabla td { text-align: left; padding: 6px 4px; font-size: 13px; border-bottom: 1px solid var(--border); }
-  .posiciones-tabla input {
-    background: #1a1f2e; border: 1px solid var(--border); color: var(--text);
-    border-radius: 5px; padding: 5px 8px; font-size: 13px; width: 100%;
+  table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; }
+  thead th {
+    position: sticky; top: 0;
+    background: var(--panel-raised);
+    text-align: left;
+    padding: 9px 10px;
+    font-family: var(--sans);
+    font-weight: 500;
+    color: var(--paper-dim);
+    font-size: 11.5px;
+    border-bottom: 1px solid var(--rule);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
   }
-  .posiciones-tabla input.ticker { text-transform: uppercase; }
+  thead th.activa { color: var(--gold); }
+  thead th .arrow { opacity: 0.6; font-size: 10px; }
+  tbody td { padding: 6px 10px; border-bottom: 1px solid var(--rule-soft); white-space: nowrap; }
+  tbody tr:hover { background: var(--panel-raised); }
+  tbody tr.en-cartera { background: rgba(198, 161, 91, 0.08); }
+  .num-pos { color: var(--up); }
+  .num-neg { color: var(--down); }
+  .chip-tipo {
+    font-family: var(--sans);
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 2px;
+    border: 1px solid var(--rule);
+    color: var(--paper-dim);
+  }
+  .btn-add {
+    background: none; border: 1px solid var(--rule); color: var(--paper-dim);
+    width: 22px; height: 22px; border-radius: 3px; cursor: pointer; font-size: 14px; line-height: 1;
+    font-family: var(--sans);
+  }
+  .btn-add:hover { border-color: var(--gold); color: var(--gold); }
+  tr.en-cartera .btn-add { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+  .conteo-universo { font-family: var(--mono); font-size: 11px; color: var(--paper-dim); margin-top: 6px; }
+
   button {
-    background: var(--accent); color: white; border: none; border-radius: 6px;
-    padding: 9px 16px; font-size: 13px; cursor: pointer; font-weight: 500;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 3px;
+    border: 1px solid var(--rule);
+    background: var(--panel-raised);
+    color: var(--paper);
+    cursor: pointer;
   }
-  button.secundario { background: #262b38; }
-  button:hover { opacity: 0.9; }
+  button:hover { border-color: var(--gold-dim); }
   button:disabled { opacity: 0.4; cursor: not-allowed; }
-  .fila-botones { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-  .metric-card { background: #1a1f2e; border-radius: 8px; padding: 12px; }
-  .metric-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; }
-  .metric-value { font-size: 20px; font-weight: 600; margin-top: 4px; }
-  .metric-value.positivo { color: var(--green); }
-  .metric-value.negativo { color: var(--red); }
-  .pesos-lista { margin-top: 12px; font-size: 13px; }
-  .peso-fila { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--border); }
-  .barra-peso { height: 4px; background: var(--accent); border-radius: 2px; margin-top: 3px; }
-  #status { font-size: 13px; color: var(--text-dim); margin-top: 10px; min-height: 18px; }
-  #status.error { color: var(--red); }
-  .btn-quitar { background: none; border: none; color: var(--red); cursor: pointer; font-size: 16px; padding: 0 6px; }
+  button.primario { background: var(--gold); border-color: var(--gold); color: var(--ink); }
+  button.primario:hover { background: #d4ae66; }
+  button.chico { padding: 5px 9px; font-size: 11.5px; }
+
+  .cartera-panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 3px; padding: 16px; position: sticky; top: 18px; }
+  .cartera-lista { margin-bottom: 12px; }
+  .cartera-fila {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 6px 0; border-bottom: 1px solid var(--rule-soft);
+    font-family: var(--mono); font-size: 13px;
+  }
+  .cartera-vacia { color: var(--paper-dim); font-size: 13px; font-style: italic; padding: 10px 0; }
+  .quitar { background: none; border: none; color: var(--paper-dim); cursor: pointer; font-size: 15px; padding: 0 4px; }
+  .quitar:hover { color: var(--down); }
+
+  details.avanzado { margin-top: 14px; }
+  details.avanzado summary { font-size: 12px; color: var(--paper-dim); cursor: pointer; }
+  .fila-manual { display: flex; gap: 6px; margin-top: 8px; }
+  .fila-manual input { width: 100%; }
+  .fila-manual input.peso { max-width: 70px; }
+
+  #status { font-family: var(--mono); font-size: 12px; margin-top: 10px; min-height: 16px; }
+  #status.error { color: var(--down); }
+
+  .comparacion { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; margin-top: 8px; }
+  .comparacion th, .comparacion td { padding: 7px 8px; border-bottom: 1px solid var(--rule-soft); text-align: right; }
+  .comparacion th:first-child, .comparacion td:first-child { text-align: left; font-family: var(--sans); color: var(--paper-dim); font-size: 12px; }
+  .comparacion thead th { font-family: var(--sans); font-weight: 500; font-size: 12px; }
+  .comparacion thead th.conservador { color: #7fa8c9; }
+  .comparacion thead th.moderado { color: var(--gold); }
+  .comparacion thead th.agresivo { color: var(--down); }
+
+  .pesos-perfil { margin-top: 4px; }
+  .pesos-perfil summary { font-family: var(--sans); font-size: 11.5px; color: var(--paper-dim); cursor: pointer; margin-top: 10px; }
+  .peso-fila { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; padding: 3px 0; }
+
+  .exportar-row { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--rule); }
+
+  #reporte-impresion { display: none; }
+
+  @media print {
+    body * { visibility: hidden; }
+    #reporte-impresion, #reporte-impresion * { visibility: visible; }
+    #reporte-impresion {
+      display: block; position: absolute; top: 0; left: 0; width: 100%;
+      background: #fff; color: #16181c; font-family: var(--serif); padding: 40px 50px;
+    }
+    #reporte-impresion h1 { font-size: 24px; font-weight: 500; margin: 0 0 2px; }
+    #reporte-impresion .rep-sub { font-family: var(--mono); font-size: 11px; color: #555; margin-bottom: 26px; letter-spacing: 0.02em; }
+    #reporte-impresion h2 { font-size: 14px; font-style: italic; font-weight: 500; border-bottom: 1px solid #ccc; padding-bottom: 6px; margin: 26px 0 12px; }
+    #reporte-impresion table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
+    #reporte-impresion th { text-align: right; font-family: var(--sans); font-weight: 600; font-size: 10.5px; color: #444; border-bottom: 1px solid #999; padding: 5px 6px; }
+    #reporte-impresion th:first-child, #reporte-impresion td:first-child { text-align: left; }
+    #reporte-impresion td { text-align: right; padding: 5px 6px; border-bottom: 1px solid #ddd; }
+    #reporte-impresion .rep-foot { margin-top: 40px; font-family: var(--mono); font-size: 9.5px; color: #888; border-top: 1px solid #ccc; padding-top: 10px; }
+    @page { margin: 1.6cm; }
+  }
 </style>
 </head>
 <body>
 
-<h1>Portfolio PM Dashboard</h1>
-<p class="subtitle" id="subtitle">Cargando universo...</p>
+<header>
+  <div class="wordmark">Portfolio <em>Ledger</em></div>
+  <div id="subtitle"><span>Cargando universo…</span></div>
+</header>
 
-<div class="grid">
+<div class="layout">
 
-  <div class="panel">
-    <h2>Armar cartera</h2>
-    <table class="posiciones-tabla" id="tabla-posiciones">
-      <thead>
-        <tr><th>Ticker</th><th>Peso %</th><th></th></tr>
-      </thead>
-      <tbody id="tbody-posiciones"></tbody>
-    </table>
-    <div class="fila-botones">
-      <button class="secundario" onclick="agregarFila()">+ Agregar posición</button>
+  <div>
+    <div class="block">
+      <p class="block-title">Universo — 1,907 activos cubiertos por el pipeline</p>
+      <div class="toolbar">
+        <input type="text" id="buscador" placeholder="Buscar ticker…">
+        <select id="filtro-tipo">
+          <option value="">Todos los tipos</option>
+          <option value="equity">Acciones</option>
+          <option value="etf">ETF</option>
+          <option value="bond_etf">ETF de bonos</option>
+        </select>
+        <button class="chico" id="btn-top-sharpe">+ Top 20 por Sharpe (filtrados)</button>
+        <button class="chico" id="btn-agregar-todos">+ Agregar todos los filtrados</button>
+      </div>
+      <div class="universo-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:26px"></th>
+              <th data-col="ticker">Ticker</th>
+              <th data-col="tipo_activo">Tipo</th>
+              <th data-col="retorno_anualizado">Retorno</th>
+              <th data-col="volatilidad_anualizada">Volat.</th>
+              <th data-col="sharpe">Sharpe</th>
+              <th data-col="beta">Beta</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-universo"></tbody>
+        </table>
+      </div>
+      <p class="conteo-universo" id="conteo-universo"></p>
     </div>
-    <div class="fila-botones" style="margin-top:16px;">
-      <button onclick="analizarCartera()">Analizar cartera (con pesos)</button>
-      <button class="secundario" onclick="completarConHRP()">Completar/Optimizar (HRP)</button>
-      <button class="secundario" onclick="completarConKelly()">Completar/Optimizar (Kelly)</button>
-    </div>
-    <div id="status"></div>
   </div>
 
-  <div class="panel">
-    <h2>Resultado</h2>
-    <div id="resultado-vacio" style="color: var(--text-dim); font-size: 13px;">
-      Armá una cartera a la izquierda y analizala.
+  <div class="cartera-panel">
+    <p class="block-title">Cartera en construcción</p>
+    <div class="cartera-lista" id="cartera-lista">
+      <div class="cartera-vacia">Agregá activos desde la tabla de la izquierda.</div>
     </div>
-    <div id="resultado-contenido" style="display:none;">
-      <div class="metric-grid" id="metric-grid"></div>
-      <div class="pesos-lista" id="pesos-lista"></div>
+
+    <button class="primario" id="btn-optimizar" style="width:100%" disabled>Optimizar cartera</button>
+    <div id="status"></div>
+
+    <details class="avanzado">
+      <summary>Modo manual — fijar pesos yo mismo en vez de que el modelo optimice</summary>
+      <div id="filas-manuales"></div>
+      <button class="chico" id="btn-analizar-manual" style="margin-top:8px;">Analizar con estos pesos</button>
+    </details>
+
+    <div id="resultado" style="display:none; margin-top:20px;">
+      <p class="block-title">Comparación de perfiles de riesgo</p>
+      <table class="comparacion" id="tabla-comparacion"></table>
+
+      <details class="pesos-perfil" open>
+        <summary>Composición por perfil</summary>
+        <div id="composicion-perfiles"></div>
+      </details>
+
+      <div class="exportar-row">
+        <button id="btn-exportar" style="width:100%">Exportar informe (PDF)</button>
+      </div>
     </div>
   </div>
 
 </div>
 
+<div id="reporte-impresion">
+  <h1>Informe de cartera</h1>
+  <div class="rep-sub" id="rep-sub"></div>
+
+  <h2>Composición propuesta</h2>
+  <table id="rep-composicion"></table>
+
+  <h2>Comparación de perfiles</h2>
+  <table id="rep-comparacion"></table>
+
+  <div class="rep-foot">
+    Generado automáticamente a partir de datos de mercado ajustados por dividendos/splits.
+    Sharpe, Sortino y Beta calculados contra SPY como benchmark. Este documento no constituye
+    asesoramiento financiero.
+  </div>
+</div>
+
 <script>
-// ============================================================
-// CONFIG -- la función de análisis ahora vive en Vercel (Netlify dejó de
-// soportar Python en sus Functions). Reemplazar por la URL real que Vercel
-// asigna al deployar, ej: "https://pmanalisis-api.vercel.app/api/analyze"
-// ============================================================
 const ANALYZE_API_URL = "https://pmanalisis.vercel.app/api/analyze";
 const METRICAS_JSON_URL = "data/metricas.json";
 
-let universoMetricas = null;
+let universo = null;
+let filasVisibles = [];
+let orden = { col: "sharpe", dir: -1 };
+let cartera = new Set();
+let resultadosPerfiles = null;
 
 async function cargarUniverso() {
   try {
     const resp = await fetch(METRICAS_JSON_URL);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    universoMetricas = await resp.json();
-    document.getElementById("subtitle").textContent =
-      `Universo: ${universoMetricas.universo_total} activos · ` +
-      `Actualizado: ${universoMetricas.fecha_actualizacion} · ` +
-      `Risk-free: ${(universoMetricas.risk_free_rate * 100).toFixed(2)}%`;
+    universo = await resp.json();
+    document.getElementById("subtitle").innerHTML =
+      `<span>${universo.universo_total.toLocaleString("es")} activos</span>` +
+      `<span>Actualizado ${universo.fecha_actualizacion}</span>` +
+      `<span>Risk-free ${(universo.risk_free_rate * 100).toFixed(2)}%</span>` +
+      `<span>Benchmark ${universo.benchmark}</span>`;
+    aplicarFiltro();
   } catch (e) {
-    document.getElementById("subtitle").textContent =
-      "No se pudo cargar metricas.json -- verificar que el archivo esté publicado en data/metricas.json";
+    document.getElementById("subtitle").innerHTML =
+      `<span style="color:var(--down)">No se pudo cargar el universo — verificá data/metricas.json</span>`;
     console.error(e);
   }
 }
 
-function agregarFila(ticker = "", peso = "") {
-  const tbody = document.getElementById("tbody-posiciones");
-  const fila = document.createElement("tr");
-  fila.innerHTML = `
-    <td><input type="text" class="ticker" placeholder="AAPL" value="${ticker}"></td>
-    <td><input type="number" class="peso" placeholder="ej. 25" step="0.1" value="${peso}"></td>
-    <td><button class="btn-quitar" onclick="this.closest('tr').remove()">×</button></td>
-  `;
-  tbody.appendChild(fila);
-}
+function aplicarFiltro() {
+  const q = document.getElementById("buscador").value.trim().toUpperCase();
+  const tipo = document.getElementById("filtro-tipo").value;
 
-function leerPosicionesDeLaTabla() {
-  const filas = document.querySelectorAll("#tbody-posiciones tr");
-  const posiciones = [];
-  filas.forEach(fila => {
-    const ticker = fila.querySelector(".ticker").value.trim().toUpperCase();
-    const pesoRaw = fila.querySelector(".peso").value.trim();
-    if (!ticker) return;
-    posiciones.push({
-      ticker: ticker,
-      peso: pesoRaw === "" ? null : parseFloat(pesoRaw) / 100,
-    });
+  filasVisibles = universo.activos.filter(a => {
+    if (tipo && a.tipo_activo !== tipo) return false;
+    if (q && !a.ticker.includes(q)) return false;
+    return true;
   });
-  return posiciones;
+
+  filasVisibles.sort((a, b) => {
+    const va = a[orden.col], vb = b[orden.col];
+    if (va === null || va === undefined) return 1;
+    if (vb === null || vb === undefined) return -1;
+    if (typeof va === "string") return va.localeCompare(vb) * orden.dir;
+    return (va - vb) * orden.dir;
+  });
+
+  renderTablaUniverso();
 }
 
-function setStatus(mensaje, esError = false) {
-  const el = document.getElementById("status");
-  el.textContent = mensaje;
-  el.className = esError ? "error" : "";
+function renderTablaUniverso() {
+  const LIMITE = 300;
+  const tbody = document.getElementById("tbody-universo");
+  const mostrar = filasVisibles.slice(0, LIMITE);
+
+  tbody.innerHTML = mostrar.map(a => {
+    const enCartera = cartera.has(a.ticker);
+    return `
+    <tr class="${enCartera ? 'en-cartera' : ''}" data-ticker="${a.ticker}">
+      <td><button class="btn-add" onclick="toggleCartera('${a.ticker}')">${enCartera ? '✓' : '+'}</button></td>
+      <td>${a.ticker}</td>
+      <td><span class="chip-tipo">${a.tipo_activo}</span></td>
+      <td class="${a.retorno_anualizado >= 0 ? 'num-pos' : 'num-neg'}">${fmtPct(a.retorno_anualizado)}</td>
+      <td>${fmtPct(a.volatilidad_anualizada)}</td>
+      <td class="${a.sharpe > 0 ? 'num-pos' : (a.sharpe < 0 ? 'num-neg' : '')}">${fmtNum(a.sharpe)}</td>
+      <td>${fmtNum(a.beta)}</td>
+    </tr>`;
+  }).join("");
+
+  document.getElementById("conteo-universo").textContent =
+    filasVisibles.length > LIMITE
+      ? `Mostrando ${LIMITE} de ${filasVisibles.length} coincidencias — refiná la búsqueda para ver el resto.`
+      : `${filasVisibles.length} coincidencias.`;
+
+  document.querySelectorAll("thead th[data-col]").forEach(th => {
+    th.classList.toggle("activa", th.dataset.col === orden.col);
+    const oldArrow = th.querySelector(".arrow");
+    if (oldArrow) oldArrow.remove();
+    if (th.dataset.col === orden.col) {
+      th.insertAdjacentHTML("beforeend", ` <span class="arrow">${orden.dir === 1 ? "▲" : "▼"}</span>`);
+    }
+  });
 }
 
-async function llamarAnalyze(metodoCompletar) {
-  const posiciones = leerPosicionesDeLaTabla();
-  if (posiciones.length === 0) {
-    setStatus("Agregá al menos un ticker.", true);
+document.querySelectorAll("thead th[data-col]").forEach(th => {
+  th.addEventListener("click", () => {
+    const col = th.dataset.col;
+    orden.dir = (orden.col === col) ? orden.dir * -1 : -1;
+    orden.col = col;
+    aplicarFiltro();
+  });
+});
+document.getElementById("buscador").addEventListener("input", aplicarFiltro);
+document.getElementById("filtro-tipo").addEventListener("change", aplicarFiltro);
+
+function toggleCartera(ticker) {
+  if (cartera.has(ticker)) cartera.delete(ticker);
+  else cartera.add(ticker);
+  renderCartera();
+  renderTablaUniverso();
+}
+
+function renderCartera() {
+  const div = document.getElementById("cartera-lista");
+  if (cartera.size === 0) {
+    div.innerHTML = `<div class="cartera-vacia">Agregá activos desde la tabla de la izquierda.</div>`;
+  } else {
+    div.innerHTML = [...cartera].map(t => `
+      <div class="cartera-fila">
+        <span>${t}</span>
+        <button class="quitar" onclick="toggleCartera('${t}')">×</button>
+      </div>`).join("");
+  }
+  document.getElementById("btn-optimizar").disabled = cartera.size === 0;
+  renderFilasManuales();
+}
+
+document.getElementById("btn-top-sharpe").addEventListener("click", () => {
+  filasVisibles.slice().sort((a, b) => (b.sharpe ?? -99) - (a.sharpe ?? -99))
+    .slice(0, 20).forEach(a => cartera.add(a.ticker));
+  renderCartera(); renderTablaUniverso();
+});
+
+document.getElementById("btn-agregar-todos").addEventListener("click", () => {
+  const TOPE = 60;
+  if (filasVisibles.length > TOPE) {
+    setStatus(`Hay ${filasVisibles.length} activos filtrados — agregando los primeros ${TOPE} según el orden actual.`);
+  }
+  filasVisibles.slice(0, TOPE).forEach(a => cartera.add(a.ticker));
+  renderCartera(); renderTablaUniverso();
+});
+
+function renderFilasManuales() {
+  const div = document.getElementById("filas-manuales");
+  div.innerHTML = [...cartera].map(t => `
+    <div class="fila-manual">
+      <input type="text" value="${t}" disabled>
+      <input type="number" class="peso" data-ticker="${t}" placeholder="%" step="0.1">
+    </div>`).join("");
+}
+
+document.getElementById("btn-analizar-manual").addEventListener("click", async () => {
+  const inputs = document.querySelectorAll("#filas-manuales .peso");
+  const posiciones = [...inputs].map(i => ({
+    ticker: i.dataset.ticker,
+    peso: i.value.trim() === "" ? null : parseFloat(i.value) / 100,
+  }));
+  if (posiciones.length === 0 || posiciones.some(p => p.peso === null)) {
+    setStatus("Completá un peso para cada activo antes de analizar en modo manual.", true);
     return;
   }
-
-  setStatus("Calculando...");
+  setStatus("Calculando…");
   try {
-    const resp = await fetch(ANALYZE_API_URL, {
+    const r = await llamarAnalyze(posiciones, null);
+    resultadosPerfiles = { manual: { label: "Manual", ...r } };
+    mostrarComparacion(resultadosPerfiles);
+    setStatus("");
+  } catch (e) {
+    setStatus(e.message, true);
+  }
+});
+
+document.getElementById("btn-optimizar").addEventListener("click", async () => {
+  if (cartera.size === 0) return;
+  setStatus("Calculando los 3 perfiles…");
+  document.getElementById("btn-optimizar").disabled = true;
+
+  try {
+    const tickers = [...cartera];
+    const infoTickers = tickers.map(t => universo.activos.find(a => a.ticker === t)).filter(Boolean);
+    const nConservador = Math.max(1, Math.ceil(infoTickers.length * 0.25));
+    const conservadorTickers = infoTickers.slice()
+      .sort((a, b) => a.volatilidad_anualizada - b.volatilidad_anualizada)
+      .slice(0, nConservador).map(a => a.ticker);
+    const pesoIgual = 1 / conservadorTickers.length;
+    const posConservador = conservadorTickers.map(t => ({ ticker: t, peso: pesoIgual }));
+
+    const posOptimizar = tickers.map(t => ({ ticker: t, peso: null }));
+
+    const [conservador, moderado, agresivo] = await Promise.all([
+      llamarAnalyze(posConservador, null),
+      llamarAnalyze(posOptimizar, "hrp"),
+      llamarAnalyze(posOptimizar, "kelly"),
+    ]);
+
+    resultadosPerfiles = {
+      conservador: { label: "Conservador", ...conservador },
+      moderado: { label: "Moderado", ...moderado },
+      agresivo: { label: "Agresivo", ...agresivo },
+    };
+    mostrarComparacion(resultadosPerfiles);
+    setStatus("");
+  } catch (e) {
+    setStatus(e.message, true);
+  } finally {
+    document.getElementById("btn-optimizar").disabled = false;
+  }
+});
+
+async function llamarAnalyze(posiciones, metodoCompletar) {
+  let resp;
+  try {
+    resp = await fetch(ANALYZE_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ posiciones, metodo_completar: metodoCompletar }),
     });
-    const data = await resp.json();
-
-    if (!resp.ok) {
-      setStatus(data.error || "Error desconocido", true);
-      return;
-    }
-
-    setStatus("");
-    mostrarResultado(data);
   } catch (e) {
-    setStatus("Error de red al llamar la función -- ¿está desplegada la función en Vercel y actualizada la URL en ANALYZE_API_URL?", true);
-    console.error(e);
+    throw new Error("Error de red -- ¿está desplegada la función en Vercel y sin Deployment Protection?");
   }
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || "Error desconocido");
+  return data;
 }
 
-function analizarCartera() {
-  const posiciones = leerPosicionesDeLaTabla();
-  if (posiciones.some(p => p.peso === null)) {
-    setStatus("Hay posiciones sin peso -- usá 'Completar/Optimizar' en vez de 'Analizar'.", true);
-    return;
-  }
-  llamarAnalyze(null);
+function setStatus(msg, esError = false) {
+  const el = document.getElementById("status");
+  el.textContent = msg;
+  el.className = esError ? "error" : "";
 }
 
-function completarConHRP() { llamarAnalyze("hrp"); }
-function completarConKelly() { llamarAnalyze("kelly"); }
+const METRICAS_TABLA = [
+  ["retorno_anualizado", "Retorno anualizado", "pct"],
+  ["volatilidad_anualizada", "Volatilidad", "pct"],
+  ["sharpe", "Sharpe", "num"],
+  ["sortino", "Sortino", "num"],
+  ["max_drawdown", "Max drawdown", "pct"],
+  ["var_95", "VaR 95%", "pct"],
+  ["cvar_95", "CVaR 95%", "pct"],
+];
 
-function formatoPct(x) { return (x * 100).toFixed(2) + "%"; }
+function mostrarComparacion(perfiles) {
+  document.getElementById("resultado").style.display = "block";
+  const claves = Object.keys(perfiles);
 
-function mostrarResultado(data) {
-  document.getElementById("resultado-vacio").style.display = "none";
-  document.getElementById("resultado-contenido").style.display = "block";
+  const tabla = document.getElementById("tabla-comparacion");
+  tabla.innerHTML = `
+    <thead><tr><th></th>${claves.map(k => `<th class="${k}">${perfiles[k].label}</th>`).join("")}</tr></thead>
+    <tbody>
+      ${METRICAS_TABLA.map(([campo, label, fmt]) => `
+        <tr><td>${label}</td>${claves.map(k => {
+          const v = perfiles[k].metricas_portfolio[campo];
+          return `<td>${v === null || v === undefined ? "—" : (fmt === "pct" ? fmtPct(v) : fmtNum(v))}</td>`;
+        }).join("")}</tr>
+      `).join("")}
+    </tbody>`;
 
-  const m = data.metricas_portfolio;
-  const metricas = [
-    { label: "Retorno anualizado", value: formatoPct(m.retorno_anualizado), positivo: m.retorno_anualizado > 0 },
-    { label: "Volatilidad anualizada", value: formatoPct(m.volatilidad_anualizada) },
-    { label: "Sharpe", value: m.sharpe !== null ? m.sharpe.toFixed(2) : "N/A", positivo: m.sharpe > 0 },
-    { label: "Sortino", value: m.sortino !== null ? m.sortino.toFixed(2) : "N/A", positivo: m.sortino > 0 },
-    { label: "Max Drawdown", value: formatoPct(m.max_drawdown), negativo: true },
-    { label: "VaR 95%", value: formatoPct(m.var_95), negativo: true },
-    { label: "CVaR 95%", value: formatoPct(m.cvar_95), negativo: true },
-  ];
-  if (m.beta !== undefined) metricas.push({ label: "Beta vs SPY", value: m.beta.toFixed(2) });
-
-  const grid = document.getElementById("metric-grid");
-  grid.innerHTML = metricas.map(x => `
-    <div class="metric-card">
-      <div class="metric-label">${x.label}</div>
-      <div class="metric-value ${x.positivo ? 'positivo' : (x.negativo ? 'negativo' : '')}">${x.value}</div>
-    </div>
-  `).join("");
-
-  const pesosOrdenados = Object.entries(data.pesos).sort((a, b) => b[1] - a[1]);
-  const maxPeso = Math.max(...pesosOrdenados.map(p => p[1]));
-
-  const pesosDiv = document.getElementById("pesos-lista");
-  pesosDiv.innerHTML = `<div style="color:var(--text-dim); font-size:12px; margin-bottom:6px;">
-    Método: ${data.metodo}</div>` +
-    pesosOrdenados.map(([ticker, peso]) => `
-      <div class="peso-fila">
-        <span>${ticker}</span>
-        <span>${formatoPct(peso)}</span>
-      </div>
-      <div class="barra-peso" style="width:${(peso / maxPeso * 100).toFixed(0)}%"></div>
-    `).join("");
+  const comp = document.getElementById("composicion-perfiles");
+  comp.innerHTML = claves.map(k => {
+    const pesos = Object.entries(perfiles[k].pesos).sort((a, b) => b[1] - a[1]);
+    return `<div style="margin-top:8px;">
+      <div style="font-family:var(--sans); font-size:11.5px; color:var(--gold);">${perfiles[k].label}</div>
+      ${pesos.map(([t, w]) => `<div class="peso-fila"><span>${t}</span><span>${fmtPct(w)}</span></div>`).join("")}
+    </div>`;
+  }).join("");
 }
 
-// Init
+document.getElementById("btn-exportar").addEventListener("click", () => {
+  if (!resultadosPerfiles) return;
+  const hoy = new Date().toISOString().slice(0, 10);
+  document.getElementById("rep-sub").textContent =
+    `Generado el ${hoy} · Universo de referencia actualizado ${universo.fecha_actualizacion} · Risk-free ${(universo.risk_free_rate * 100).toFixed(2)}%`;
+
+  const claves = Object.keys(resultadosPerfiles);
+  document.getElementById("rep-comparacion").innerHTML = `
+    <thead><tr><th></th>${claves.map(k => `<th>${resultadosPerfiles[k].label}</th>`).join("")}</tr></thead>
+    <tbody>
+      ${METRICAS_TABLA.map(([campo, label, fmt]) => `
+        <tr><td>${label}</td>${claves.map(k => {
+          const v = resultadosPerfiles[k].metricas_portfolio[campo];
+          return `<td>${v === null || v === undefined ? "—" : (fmt === "pct" ? fmtPct(v) : fmtNum(v))}</td>`;
+        }).join("")}</tr>`).join("")}
+    </tbody>`;
+
+  const primeraClave = claves.includes("moderado") ? "moderado" : claves[0];
+  const perfilRef = resultadosPerfiles[primeraClave];
+  const pesos = Object.entries(perfilRef.pesos).sort((a, b) => b[1] - a[1]);
+  document.getElementById("rep-composicion").innerHTML = `
+    <thead><tr><th>Ticker</th><th>Peso (perfil ${perfilRef.label})</th></tr></thead>
+    <tbody>${pesos.map(([t, w]) => `<tr><td>${t}</td><td>${fmtPct(w)}</td></tr>`).join("")}</tbody>`;
+
+  window.print();
+});
+
+function fmtPct(x) { return x === null || x === undefined ? "—" : (x * 100).toFixed(2) + "%"; }
+function fmtNum(x) { return x === null || x === undefined ? "—" : x.toFixed(2); }
+
 cargarUniverso();
-agregarFila("AAPL", "");
-agregarFila("MSFT", "");
-agregarFila("SPY", "");
+renderCartera();
 </script>
 
 </body>
